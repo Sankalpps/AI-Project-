@@ -113,7 +113,6 @@
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
     <script>
         // 1. Initialize Map centered on Mysore
@@ -124,32 +123,19 @@
 
         let markers = {};
 
-        // 2. Connect to server.js backend
-        const backendUrl = location.protocol === 'file:'
-            ? 'http://localhost:3000'
-            : `${location.protocol}//${location.hostname}:3000`;
-        const socket = io(backendUrl, {
-            reconnection: true,
-            reconnectionAttempts: 20,
-            reconnectionDelay: 1000
-        });
+        // 2. Fleet data (runs entirely client-side — no backend needed)
+        let buses = [
+            { id: 'BUS-101', route: 'KRS Dam', lat: 12.3051, lng: 76.6550, speed: 40, color: '#ff0000' },
+            { id: 'BUS-202', route: 'NIE NORTH', lat: 12.371214742514967, lng: 76.58488491499308, speed: 35, color: '#28a745' },
+            { id: 'BUS-303', route: 'Infosys Campus', lat: 12.3550, lng: 76.6000, speed: 45, color: '#00d5ff' },
+            { id: 'BUS-304', route: 'NIE SOUTH', lat: 12.28393, lng: 76.64143, speed: 45, color: '#007bff' },
+        ];
 
-        socket.on('connect', () => {
-            document.getElementById('dot').classList.add('online');
-            document.getElementById('conn-text').innerText = 'System Online';
-        });
+        // Mark system as online immediately
+        document.getElementById('dot').classList.add('online');
+        document.getElementById('conn-text').innerText = 'System Online';
 
-        socket.on('disconnect', () => {
-            document.getElementById('dot').classList.remove('online');
-            document.getElementById('conn-text').innerText = 'System Offline';
-        });
-
-        socket.on('connect_error', () => {
-            document.getElementById('dot').classList.remove('online');
-            document.getElementById('conn-text').innerText = 'Cannot reach backend on port 3000';
-        });
-
-        // Helper: build a bus card from server data
+        // Helper: build a bus card
         function createCard(bus) {
             const card = document.createElement('div');
             card.className = 'bus-card';
@@ -173,12 +159,12 @@
             return card;
         }
 
-        // 3. Receive initial fleet from server.js → init-fleet event
-        socket.on('init-fleet', (fleet) => {
+        // 3. Initialize fleet on the map and sidebar
+        function initFleet() {
             const listDiv = document.getElementById('bus-list');
             listDiv.innerHTML = '';
 
-            fleet.forEach(bus => {
+            buses.forEach(bus => {
                 markers[bus.id] = L.circleMarker([bus.lat, bus.lng], {
                     radius: 10,
                     fillColor: bus.color,
@@ -189,11 +175,15 @@
 
                 listDiv.appendChild(createCard(bus));
             });
-        });
+        }
 
-        // 4. Receive live updates from server.js → fleet-update event (every 2s)
-        socket.on('fleet-update', (updatedFleet) => {
-            updatedFleet.forEach(bus => {
+        // 4. Simulate movement every 2 seconds (same logic as the old server.js)
+        function simulateMovement() {
+            buses.forEach(bus => {
+                bus.lat += (Math.random() - 0.5) * 0.0015;
+                bus.lng += (Math.random() - 0.5) * 0.0015;
+                bus.speed = Math.floor(Math.random() * 25) + 20;
+
                 if (markers[bus.id]) markers[bus.id].setLatLng([bus.lat, bus.lng]);
 
                 const card = document.getElementById(`card-${bus.id}`);
@@ -203,7 +193,11 @@
                     card.querySelector('.lng-label').innerText = bus.lng.toFixed(4);
                 }
             });
-        });
+        }
+
+        // Start the simulation
+        initFleet();
+        setInterval(simulateMovement, 2000);
 
         // Locate a bus on the map
         function locateBus(id) {
