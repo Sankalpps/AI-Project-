@@ -263,7 +263,7 @@
 
                     // Redirect to tracker
                     setTimeout(() => {
-                        window.location.href = '/';
+                        window.location.href = '/?token=' + encodeURIComponent(data.token);
                     }, 1500);
                 } else {
                     errorMessage.textContent = '✗ ' + (data.message || 'Invalid credentials');
