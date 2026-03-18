@@ -106,6 +106,10 @@
         <div class="header">
             <h2>Mysore Transit</h2>
             <p><span id="dot" class="status-dot"></span> <span id="conn-text">Connecting to Server...</span></p>
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee;">
+                <small id="user-info" style="color: #999;"></small>
+                <button id="logout-btn" style="width: 100%; margin-top: 8px; padding: 6px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">Logout</button>
+            </div>
         </div>
         <div id="bus-list"></div>
     </div>
@@ -115,6 +119,35 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
+        // ========== AUTHENTICATION CHECK ==========
+        const token = localStorage.getItem('token');
+        const username = localStorage.getItem('username');
+        const assignedBusId = localStorage.getItem('busId');
+
+        if (!token || !username || !assignedBusId) {
+            window.location.href = '/login.html';
+        }
+
+        // Display user info
+        document.getElementById('user-info').textContent = `👤 ${username} | Bus: ${assignedBusId}`;
+
+        // Logout handler
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            try {
+                await fetch('/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+            } catch (e) {
+                console.log('Logout error (non-blocking):', e);
+            }
+            
+            localStorage.clear();
+            window.location.href = '/login.html';
+        });
+
         // 1. Initialize Map centered on Mysore
         const map = L.map('map').setView([12.371214742514967, 76.58488491499308], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -126,10 +159,19 @@
         // 2. Fleet data (runs entirely client-side — no backend needed)
         let buses = [
             { id: 'BUS-101', route: 'KRS Dam', lat: 12.3051, lng: 76.6550, speed: 40, color: '#ff0000' },
-            { id: 'BUS-202', route: 'NIE NORTH', lat: 12.371214742514967, lng: 76.58488491499308, speed: 35, color: '#28a745' },
-            { id: 'BUS-303', route: 'Infosys Campus', lat: 12.3550, lng: 76.6000, speed: 45, color: '#00d5ff' },
-            { id: 'BUS-304', route: 'NIE SOUTH', lat: 12.28393, lng: 76.64143, speed: 45, color: '#007bff' },
+            { id: 'BUS-102', route: 'NIE NORTH', lat: 12.371214742514967, lng: 76.58488491499308, speed: 35, color: '#28a745' },
+            { id: 'BUS-103', route: 'Infosys Campus', lat: 12.3550, lng: 76.6000, speed: 45, color: '#00d5ff' },
+            { id: 'BUS-104', route: 'NIE SOUTH', lat: 12.28393, lng: 76.64143, speed: 45, color: '#007bff' },
+            { id: 'BUS-105', route: 'Aravind Hospital', lat: 12.3045, lng: 76.6547, speed: 38, color: '#ffc107' },
+            { id: 'BUS-106', route: 'Palace Road', lat: 12.2847, lng: 76.6446, speed: 42, color: '#e91e63' },
+            { id: 'BUS-107', route: 'Gokulam', lat: 12.3388, lng: 76.6944, speed: 40, color: '#009688' },
+            { id: 'BUS-108', route: 'Railway Station', lat: 12.2942, lng: 76.5990, speed: 35, color: '#673ab7' },
+            { id: 'BUS-109', route: 'Bus Stand', lat: 12.3070, lng: 76.6468, speed: 43, color: '#ff9800' },
+            { id: 'BUS-110', route: 'Jayadeva Hospital', lat: 12.3222, lng: 76.6356, speed: 39, color: '#4caf50' }
         ];
+
+        // Filter buses to show only the user's assigned bus
+        buses = buses.filter(bus => bus.id === assignedBusId);
 
         // Mark system as online immediately
         document.getElementById('dot').classList.add('online');
