@@ -1,6 +1,7 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const { findUserByCredentials } = require('./db');
 
 const app = express();
 const isVercel = process.env.VERCEL === '1';
@@ -8,20 +9,6 @@ const server = isVercel ? null : http.createServer(app);
 
 // Middleware
 app.use(express.json());
-
-// ========== DATABASE STRUCTURE - 10 Databases with User-to-Bus Mapping ==========
-const databases = {
-    db1: { username: 'user1', password: 'pass123', busId: 'BUS-101' },
-    db2: { username: 'user2', password: 'pass123', busId: 'BUS-102' },
-    db3: { username: 'user3', password: 'pass123', busId: 'BUS-103' },
-    db4: { username: 'user4', password: 'pass123', busId: 'BUS-104' },
-    db5: { username: 'user5', password: 'pass123', busId: 'BUS-105' },
-    db6: { username: 'user6', password: 'pass123', busId: 'BUS-106' },
-    db7: { username: 'user7', password: 'pass123', busId: 'BUS-107' },
-    db8: { username: 'user8', password: 'pass123', busId: 'BUS-108' },
-    db9: { username: 'user9', password: 'pass123', busId: 'BUS-109' },
-    db10: { username: 'user10', password: 'pass123', busId: 'BUS-110' }
-};
 
 // Store active sessions
 const activeSessions = {};
@@ -52,15 +39,8 @@ app.get('/healthz', (req, res) => {
 app.post('/auth/login', (req, res) => {
     const { username, password } = req.body;
 
-    // Find user in databases
-    let foundUser = null;
-    for (const dbKey in databases) {
-        const user = databases[dbKey];
-        if (user.username === username && user.password === password) {
-            foundUser = user;
-            break;
-        }
-    }
+    // Find user in the SQLite database
+    const foundUser = findUserByCredentials(username, password);
 
     if (!foundUser) {
         return res.status(401).json({ message: 'Invalid credentials' });
