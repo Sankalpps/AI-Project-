@@ -51,26 +51,25 @@ INSERT OR IGNORE INTO routes (id, name, description) VALUES
 (2, 'Route B – Sports Complex',   'Admin block → Labs → Sports complex → Back gate'),
 (3, 'Route C – City Express',     'Campus → Railway station (morning & evening)');
 
--- Stops for Route A  (approximate coords – update for your campus)
+-- Stops for Route A  (NIE North Campus internal - Adjusted to user exact coords)
 INSERT OR IGNORE INTO stops (route_id, name, latitude, longitude, stop_order) VALUES
-(1, 'Main Gate',       12.9716, 77.5946, 1),
-(1, 'Library',         12.9725, 77.5955, 2),
-(1, 'Boys Hostel',     12.9730, 77.5965, 3),
-(1, 'Canteen',         12.9720, 77.5970, 4),
-(1, 'Admin Block',     12.9710, 77.5960, 5);
+(1, 'NIE North Main Gate',    12.372115, 76.584975, 1),
+(1, 'Admin Block',           12.372500, 76.585500, 2),
+(1, 'Academic Block 1',      12.373500, 76.586000, 3),
+(1, 'Campus Canteen',        12.373000, 76.587000, 4),
+(1, 'Hostel Block',          12.374500, 76.587500, 5);
 
--- Stops for Route B
+-- Stops for Route B (Hootagalli to Campus)
 INSERT OR IGNORE INTO stops (route_id, name, latitude, longitude, stop_order) VALUES
-(2, 'Admin Block',     12.9710, 77.5960, 1),
-(2, 'CS Labs',         12.9718, 77.5975, 2),
-(2, 'Sports Complex',  12.9705, 77.5980, 3),
-(2, 'Back Gate',       12.9700, 77.5990, 4);
+(2, 'Hootagalli Circle',     12.3400, 76.5900, 1),
+(2, 'BEML Circle',           12.3415, 76.5850, 2),
+(2, 'NIE North Main Gate',   12.372115, 76.584975, 3);
 
--- Stops for Route C
+-- Stops for Route C (Railway Station to Campus)
 INSERT OR IGNORE INTO stops (route_id, name, latitude, longitude, stop_order) VALUES
-(3, 'Campus Gate',     12.9716, 77.5946, 1),
-(3, 'City Bus Stand',  12.9800, 77.6050, 2),
-(3, 'Railway Station', 12.9850, 77.6100, 3);
+(3, 'Mysuru Railway Station', 12.3160, 76.6465, 1),
+(3, 'V.V. Puram',            12.3250, 76.6200, 2),
+(3, 'NIE North Main Gate',   12.372115, 76.584975, 3);
 
 -- Buses
 INSERT OR IGNORE INTO buses (id, name, number_plate, capacity, status, route_id) VALUES

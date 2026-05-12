@@ -4,7 +4,7 @@
 
 // ── Map init ───────────────────────────────────────────────
 const map = L.map('map', {
-  center: [12.372115, 76.584975],   // Default: mysuru added 
+  center: [12.372115, 76.584975],   // Exact: NIE North Campus Main Gate
   zoom: 16,
   zoomControl: true
 });
@@ -18,6 +18,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 let buses       = [];       // [{id, name, number_plate, status, route_id, …}]
 let busMarkers  = {};       // {bus_id: L.Marker}
 let stopMarkers = [];       // L.Marker[]
+let routeLine   = null;     // Routing control object
 let selectedBus = null;
 const feedLimit = 8;
 
@@ -36,6 +37,8 @@ socket.on('location_update', (data) => {
   if (selectedBus && data.bus_id === selectedBus.id) {
     updateSidebarETA(data.stops);
     updateStopETAs(data.stops);
+    // Dynamic routing: Update path to start from current location
+    renderRoadRoute(data.stops, { lat: data.latitude, lng: data.longitude });
   }
   addFeedItem(`🚌 Bus ${getBusName(data.bus_id)} updated position`);
 });
@@ -98,9 +101,13 @@ async function selectBus(bus) {
     c.classList.toggle('selected', parseInt(c.dataset.id) === bus.id);
   });
 
-  // Clear old stop markers
+  // Clear old stop markers and routing control
   stopMarkers.forEach(m => m.remove());
   stopMarkers = [];
+  if (routeLine) {
+    map.removeControl(routeLine);
+    routeLine = null;
+  }
 
   if (!bus.route_id) {
     document.getElementById('route-section').style.display = 'none';
@@ -112,6 +119,10 @@ async function selectBus(bus) {
   const stops = await fetchStops(bus.route_id);
   renderStopList(stops);
   renderStopMarkers(stops);
+  
+  // If bus is active and we have its marker, start route from its current position
+  const currentPos = busMarkers[bus.id] ? busMarkers[bus.id].getLatLng() : null;
+  renderRoadRoute(stops, currentPos);
 
   // Pan to bus if active
   if (busMarkers[bus.id]) {
@@ -158,6 +169,48 @@ function renderStopMarkers(stops) {
       .bindPopup(`<b>${s.name}</b><br>Stop #${s.stop_order}`);
     stopMarkers.push(marker);
   });
+}
+
+// ── Render road-following route ───────────────────────────
+function renderRoadRoute(stops, currentPos = null) {
+  if (!stops || stops.length === 0) return;
+
+  // Build waypoints: Start from current position if available, otherwise from first stop
+  let waypoints = [];
+  
+  if (currentPos) {
+    waypoints.push(L.latLng(currentPos.lat, currentPos.lng));
+  }
+  
+  stops.forEach(s => {
+    waypoints.push(L.latLng(s.latitude, s.longitude));
+  });
+
+  // If we only have 1 waypoint (no current pos and only 1 stop), we can't route
+  if (waypoints.length < 2) return;
+
+  // Remove existing routing control before adding a new one
+  if (routeLine) {
+    map.removeControl(routeLine);
+  }
+
+  routeLine = L.Routing.control({
+    waypoints: waypoints,
+    router: L.Routing.osrmv1({
+      serviceUrl: 'https://router.project-osrm.org/route/v1'
+    }),
+    routeWhileDragging: false,
+    addWaypoints: false,
+    draggableWaypoints: false,
+    fitSelectedRoutes: false, // Don't snap zoom on every live update
+    showAlternatives: false,
+    lineOptions: {
+      styles: [{ color: '#f5a623', opacity: 0.8, weight: 6 }]
+    },
+    createMarker: function() { return null; }
+  }).addTo(map);
+
+  routeLine.hide();
 }
 
 // ── Update/create bus marker on map ───────────────────────

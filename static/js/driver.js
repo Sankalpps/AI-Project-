@@ -48,12 +48,14 @@ async function fetchBuses() {
   buses.forEach(b => {
     const opt = document.createElement('option');
     opt.value = b.id;
-    opt.textContent = `${b.name} (${b.number_plate})`;
+    // Show 'Active' in dropdown if bus is already in a trip
+    const statusText = b.status === 'active' ? ' [ACTIVE]' : '';
+    opt.textContent = `${b.name} (${b.number_plate})${statusText}`;
     busSelect.appendChild(opt);
   });
 
-  // Restore from localStorage
-  const savedId = localStorage.getItem('selectedBusId');
+  // Restore from sessionStorage (allows multiple tabs to have different buses)
+  const savedId = sessionStorage.getItem('selectedBusId');
   if (savedId) {
     busSelect.value = savedId;
     selectedBusId = parseInt(savedId);
@@ -70,11 +72,11 @@ busSelect.addEventListener('change', async () => {
     busInfo.style.display = 'none';
     btnStart.disabled = true;
     selectedBusId = null;
-    localStorage.removeItem('selectedBusId');
+    sessionStorage.removeItem('selectedBusId');
     return;
   }
   selectedBusId = id;
-  localStorage.setItem('selectedBusId', id);
+  sessionStorage.setItem('selectedBusId', id);
 
   await loadBusDetails(id);
 });
