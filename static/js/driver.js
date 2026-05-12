@@ -51,6 +51,15 @@ async function fetchBuses() {
     opt.textContent = `${b.name} (${b.number_plate})`;
     busSelect.appendChild(opt);
   });
+
+  // Restore from localStorage
+  const savedId = localStorage.getItem('selectedBusId');
+  if (savedId) {
+    busSelect.value = savedId;
+    selectedBusId = parseInt(savedId);
+    await loadBusDetails(selectedBusId);
+  }
+
   return buses;
 }
 
@@ -61,10 +70,16 @@ busSelect.addEventListener('change', async () => {
     busInfo.style.display = 'none';
     btnStart.disabled = true;
     selectedBusId = null;
+    localStorage.removeItem('selectedBusId');
     return;
   }
   selectedBusId = id;
+  localStorage.setItem('selectedBusId', id);
 
+  await loadBusDetails(id);
+});
+
+async function loadBusDetails(id) {
   // Load bus details
   const res   = await fetch('/api/buses');
   const buses = await res.json();
@@ -84,22 +99,18 @@ busSelect.addEventListener('change', async () => {
     } else {
       infoRoute.textContent = 'No route assigned';
     }
+
+    if (bus.status === 'active' && !tripActive) {
+      log(`Bus ${bus.name} is already active. Resuming...`, 'info');
+      startTripUI();
+    }
   }
 
-  btnStart.disabled = false;
+  btnStart.disabled = tripActive;
   log(`Bus ${bus?.name} selected`);
-});
+}
 
-// ── Start trip ─────────────────────────────────────────────
-btnStart.addEventListener('click', () => {
-  if (!selectedBusId) return alert('Please select a bus first.');
-
-  if (!navigator.geolocation) {
-    alert('Geolocation is not supported by your browser.');
-    return;
-  }
-
-  socket.emit('start_trip', { bus_id: selectedBusId });
+function startTripUI() {
   tripActive = true;
 
   tripBadge.textContent = 'ACTIVE';
@@ -121,6 +132,19 @@ btnStart.addEventListener('click', () => {
   pingInterval = setInterval(() => {
     if (lastPosition && tripActive) sendLocation(lastPosition);
   }, PING_MS);
+}
+
+// ── Start trip ─────────────────────────────────────────────
+btnStart.addEventListener('click', () => {
+  if (!selectedBusId) return alert('Please select a bus first.');
+
+  if (!navigator.geolocation) {
+    alert('Geolocation is not supported by your browser.');
+    return;
+  }
+
+  socket.emit('start_trip', { bus_id: selectedBusId });
+  startTripUI();
 
   log('Trip started – GPS tracking active', 'success');
 });

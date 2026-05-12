@@ -4,7 +4,7 @@
 
 // ── Map init ───────────────────────────────────────────────
 const map = L.map('map', {
-  center: [12.372115, 76.584975],   // Default: Bengaluru – change to your campus centre
+  center: [12.372115, 76.584975],   // Default: mysuru added 
   zoom: 16,
   zoomControl: true
 });
@@ -250,7 +250,30 @@ function getBusName(busId) {
 }
 
 // ── Boot ───────────────────────────────────────────────────
-fetchBuses();
+async function boot() {
+  await fetchBuses();
+  await fetchLiveBuses();
+}
+
+boot();
 
 // Auto-refresh bus list every 30s (catches status changes)
 setInterval(fetchBuses, 30_000);
+
+async function fetchLiveBuses() {
+  try {
+    const res = await fetch('/api/live');
+    const liveData = await res.json();
+    liveData.forEach(data => {
+      if (data.latitude && data.longitude) {
+        // Map 'id' from API to 'bus_id' expected by updateBusMarker
+        updateBusMarker({
+          ...data,
+          bus_id: data.id
+        });
+      }
+    });
+  } catch (err) {
+    console.error('Error fetching live buses:', err);
+  }
+}
