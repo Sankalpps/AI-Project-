@@ -1,0 +1,267 @@
+/* ═══════════════════════════════════════════════════════════
+   CAMPUS BUS TRACKER – Driver Panel CSS
+═══════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg:        #0d0f14;
+  --surface:   #161a23;
+  --surface2:  #1e2330;
+  --border:    #2a3045;
+  --amber:     #f5a623;
+  --green:     #22c55e;
+  --red:       #ef4444;
+  --text:      #e8eaf0;
+  --text-muted:#7a849e;
+  --mono:      'Space Mono', monospace;
+  --sans:      'DM Sans', sans-serif;
+  --radius:    12px;
+  --topbar-h:  56px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+}
+
+/* ── Topbar ─────────────────────────────────────────────── */
+.topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--topbar-h);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 24px;
+  z-index: 1000;
+}
+.topbar-brand {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-weight: 700; font-size: 15px;
+  color: var(--amber); letter-spacing: -.5px;
+}
+.brand-icon { font-size: 20px; }
+.brand-name em { font-style: normal; color: var(--text); }
+.topbar-nav { display: flex; gap: 4px; margin-left: 16px; }
+.nav-link {
+  padding: 6px 14px; border-radius: 6px; text-decoration: none;
+  color: var(--text-muted); font-size: 13px; font-weight: 500; transition: all .18s;
+}
+.nav-link:hover { color: var(--text); background: var(--surface2); }
+.nav-link.active { color: var(--amber); background: rgba(245,166,35,.12); }
+.topbar-status {
+  margin-left: auto; display: flex; align-items: center; gap: 8px;
+  font-size: 12px; font-family: var(--mono); color: var(--text-muted);
+}
+.dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--text-muted); display: inline-block; flex-shrink: 0;
+}
+.dot.connected    { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.dot.disconnected { background: var(--red);   box-shadow: 0 0 8px var(--red);   }
+
+/* ── Layout ─────────────────────────────────────────────── */
+.driver-main {
+  padding: calc(var(--topbar-h) + 24px) 24px 40px;
+  max-width: 760px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* ── Card ───────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.card-title {
+  font-size: 11px;
+  font-family: var(--mono);
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.bus-select-card { grid-column: 1 / -1; }
+.log-card        { grid-column: 1 / -1; }
+
+/* ── Select ─────────────────────────────────────────────── */
+.select-wrap { position: relative; }
+.styled-select {
+  width: 100%;
+  appearance: none;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  padding: 10px 36px 10px 14px;
+  cursor: pointer;
+  transition: border-color .18s;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a849e' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+.styled-select:focus { outline: none; border-color: var(--amber); }
+
+/* ── Bus info ────────────────────────────────────────────── */
+.bus-info {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--surface2);
+  border-radius: 6px;
+  font-size: 13px;
+}
+.info-label { color: var(--text-muted); font-size: 12px; }
+
+/* ── Trip control ────────────────────────────────────────── */
+.trip-status-row { margin-bottom: 16px; }
+.status-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  transition: all .3s;
+}
+.status-badge.active {
+  background: rgba(34,197,94,.12);
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.btn-group { display: flex; gap: 10px; }
+
+.btn {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all .2s;
+}
+.btn:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+.btn-start {
+  background: var(--green);
+  color: #0d0f14;
+}
+.btn-start:not(:disabled):hover {
+  background: #16a34a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(34,197,94,.3);
+}
+.btn-stop {
+  background: var(--red);
+  color: #fff;
+}
+.btn-stop:not(:disabled):hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(239,68,68,.3);
+}
+.btn-icon { font-size: 11px; }
+
+/* ── GPS card ────────────────────────────────────────────── */
+.gps-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.gps-item {
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.gps-label {
+  font-size: 10px;
+  font-family: var(--mono);
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.gps-value {
+  font-size: 14px;
+  font-weight: 500;
+}
+.gps-value.mono { font-family: var(--mono); font-size: 12px; color: var(--amber); }
+
+.gps-bar {
+  height: 4px;
+  background: var(--surface2);
+  border-radius: 100px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.gps-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--green);
+  border-radius: 100px;
+  transition: width .5s;
+}
+.gps-msg {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  font-family: var(--mono);
+}
+
+/* ── Log ─────────────────────────────────────────────────── */
+.log-list {
+  list-style: none;
+  max-height: 180px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.log-item {
+  padding: 7px 10px;
+  background: var(--surface2);
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: var(--mono);
+  border-left: 3px solid var(--amber);
+}
+.log-item.muted { border-left-color: var(--border); color: var(--text-muted); }
+.log-item.success { border-left-color: var(--green); }
+.log-item.error   { border-left-color: var(--red); }
+
+@media (max-width: 600px) {
+  .driver-main { grid-template-columns: 1fr; padding: calc(var(--topbar-h) + 16px) 16px 40px; }
+  .bus-select-card, .log-card { grid-column: 1; }
+}

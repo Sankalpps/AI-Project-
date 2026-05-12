@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Campus BusTrack – Live Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="/static/css/student.css"/>
+</head>
+<body>
+
+<!-- ── TOP NAV ──────────────────────────────────────────── -->
+<header class="topbar">
+  <div class="topbar-brand">
+    <span class="brand-icon">🚌</span>
+    <span class="brand-name">CampusBus<em>Track</em></span>
+  </div>
+  <nav class="topbar-nav">
+    <a href="/student" class="nav-link active">Live Map</a>
+    <a href="/driver"  class="nav-link">Driver</a>
+    <a href="/admin"   class="nav-link">Admin</a>
+  </nav>
+  <div class="topbar-status">
+    <span class="dot" id="conn-dot"></span>
+    <span id="conn-label">Connecting…</span>
+  </div>
+</header>
+
+<!-- ── MAIN LAYOUT ──────────────────────────────────────── -->
+<main class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <label class="section-label">SELECT BUS</label>
+      <div class="bus-list" id="bus-list">
+        <div class="skeleton-row"></div>
+        <div class="skeleton-row"></div>
+        <div class="skeleton-row"></div>
+      </div>
+    </div>
+
+    <div class="sidebar-section" id="route-section" style="display:none">
+      <label class="section-label">ROUTE STOPS</label>
+      <ol class="stop-list" id="stop-list"></ol>
+    </div>
+
+    <div class="sidebar-section" id="eta-section" style="display:none">
+      <label class="section-label">NEXT STOP ETA</label>
+      <div class="eta-card" id="eta-card">
+        <div class="eta-value" id="eta-value">–</div>
+        <div class="eta-unit">minutes away</div>
+        <div class="eta-stop" id="eta-stop-name"></div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <label class="section-label">LIVE FEED</label>
+      <ul class="feed-list" id="feed-list">
+        <li class="feed-item muted">Waiting for updates…</li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- Map -->
+  <div class="map-wrapper">
+    <div id="map"></div>
+    <div class="map-legend">
+      <span class="legend-item"><span class="dot green"></span>Active</span>
+      <span class="legend-item"><span class="dot red"></span>Offline</span>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── SCRIPTS ───────────────────────────────────────────── -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+<script src="/static/js/student.js"></script>
+</body>
+</html>

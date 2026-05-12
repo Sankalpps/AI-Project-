@@ -1,0 +1,342 @@
+/* ═══════════════════════════════════════════════════════════
+   CAMPUS BUS TRACKER – Student Map CSS
+   Aesthetic: Transit / dark industrial with amber accents
+═══════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+/* ── Variables ─────────────────────────────────────────── */
+:root {
+  --bg:        #0d0f14;
+  --surface:   #161a23;
+  --surface2:  #1e2330;
+  --border:    #2a3045;
+  --amber:     #f5a623;
+  --amber-dim: #c4841c;
+  --green:     #22c55e;
+  --red:       #ef4444;
+  --text:      #e8eaf0;
+  --text-muted:#7a849e;
+  --mono:      'Space Mono', monospace;
+  --sans:      'DM Sans', sans-serif;
+  --radius:    10px;
+  --topbar-h:  56px;
+}
+
+/* ── Reset ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+/* ── Topbar ────────────────────────────────────────────── */
+.topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--topbar-h);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 24px;
+  z-index: 1000;
+}
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--amber);
+  letter-spacing: -0.5px;
+}
+.brand-icon { font-size: 20px; }
+.brand-name em { font-style: normal; color: var(--text); }
+
+.topbar-nav {
+  display: flex;
+  gap: 4px;
+  margin-left: 16px;
+}
+.nav-link {
+  padding: 6px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all .18s;
+}
+.nav-link:hover { color: var(--text); background: var(--surface2); }
+.nav-link.active {
+  color: var(--amber);
+  background: rgba(245,166,35,.12);
+}
+
+.topbar-status {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--text-muted);
+}
+
+/* ── Status dot ────────────────────────────────────────── */
+.dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  display: inline-block;
+  flex-shrink: 0;
+}
+.dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.dot.red   { background: var(--red);   box-shadow: 0 0 6px var(--red);   }
+.dot.amber { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+.dot.connected    { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.dot.disconnected { background: var(--red);   box-shadow: 0 0 8px var(--red);   }
+
+/* ── Main layout ───────────────────────────────────────── */
+.layout {
+  display: flex;
+  height: 100vh;
+  padding-top: var(--topbar-h);
+}
+
+/* ── Sidebar ───────────────────────────────────────────── */
+.sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.sidebar-section {
+  padding: 18px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+/* ── Bus list (clickable cards) ─────────────────────────── */
+.bus-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bus-card {
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all .18s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.bus-card:hover { border-color: var(--amber); background: rgba(245,166,35,.06); }
+.bus-card.selected { border-color: var(--amber); background: rgba(245,166,35,.10); }
+
+.bus-card-name {
+  font-weight: 600;
+  font-size: 13px;
+}
+.bus-card-plate {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.bus-card-dot { margin-left: auto; }
+
+/* ── Stop list ─────────────────────────────────────────── */
+.stop-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+  padding-left: 24px;
+}
+.stop-list::before {
+  content: '';
+  position: absolute;
+  left: 8px; top: 8px; bottom: 8px;
+  width: 2px;
+  background: var(--border);
+}
+.stop-item {
+  position: relative;
+  padding: 8px 0;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.stop-item::before {
+  content: '';
+  position: absolute;
+  left: -20px;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+}
+.stop-item.next::before {
+  border-color: var(--amber);
+  background: var(--amber);
+}
+.stop-item .stop-eta {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--amber);
+}
+
+/* ── ETA card ──────────────────────────────────────────── */
+.eta-card {
+  background: linear-gradient(135deg, rgba(245,166,35,.15), rgba(245,166,35,.05));
+  border: 1px solid rgba(245,166,35,.3);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+}
+.eta-value {
+  font-family: var(--mono);
+  font-size: 42px;
+  font-weight: 700;
+  color: var(--amber);
+  line-height: 1;
+}
+.eta-unit {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  letter-spacing: .5px;
+}
+.eta-stop {
+  font-size: 12px;
+  color: var(--text);
+  margin-top: 8px;
+  font-weight: 500;
+}
+
+/* ── Live feed ─────────────────────────────────────────── */
+.feed-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.feed-item {
+  padding: 7px 10px;
+  background: var(--surface2);
+  border-radius: 6px;
+  font-size: 12px;
+  border-left: 3px solid var(--amber);
+  animation: slideIn .2s ease;
+}
+.feed-item.muted { border-left-color: var(--border); color: var(--text-muted); }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Skeleton loaders ──────────────────────────────────── */
+.skeleton-row {
+  height: 52px;
+  border-radius: var(--radius);
+  background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  margin-bottom: 6px;
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+/* ── Map ───────────────────────────────────────────────── */
+.map-wrapper {
+  flex: 1;
+  position: relative;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+}
+
+/* Force Leaflet dark tiles look */
+.leaflet-tile { filter: brightness(.85) saturate(0.7); }
+
+.map-legend {
+  position: absolute;
+  bottom: 24px;
+  right: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  display: flex;
+  gap: 14px;
+  z-index: 800;
+  font-size: 12px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Custom bus marker ─────────────────────────────────── */
+.bus-marker {
+  background: var(--amber);
+  border: 3px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  box-shadow: 0 3px 12px rgba(0,0,0,.4);
+}
+.bus-marker-inner {
+  transform: rotate(45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+/* ── Responsive ────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .layout { flex-direction: column; overflow: auto; }
+  .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+  .map-wrapper { height: 55vh; }
+  html, body { overflow: auto; }
+}

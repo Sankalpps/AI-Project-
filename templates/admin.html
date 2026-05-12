@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Campus BusTrack – Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/static/css/admin.css"/>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-brand">
+    <span class="brand-icon">🚌</span>
+    <span class="brand-name">CampusBus<em>Track</em></span>
+  </div>
+  <nav class="topbar-nav">
+    <a href="/student" class="nav-link">Live Map</a>
+    <a href="/driver"  class="nav-link">Driver</a>
+    <a href="/admin"   class="nav-link active">Admin</a>
+  </nav>
+</header>
+
+<main class="admin-main">
+
+  <!-- ── TABS ───────────────────────────────────────────── -->
+  <div class="tab-bar">
+    <button class="tab active" data-tab="buses">🚌 Buses</button>
+    <button class="tab"        data-tab="routes">🗺️ Routes</button>
+    <button class="tab"        data-tab="stops">📍 Stops</button>
+    <button class="tab"        data-tab="assign">🔗 Assign</button>
+  </div>
+
+  <!-- ── BUSES TAB ─────────────────────────────────────── -->
+  <section class="tab-panel active" id="tab-buses">
+    <div class="panel-header">
+      <h2 class="panel-title">Manage Buses</h2>
+      <button class="btn btn-primary" id="btn-add-bus">+ Add Bus</button>
+    </div>
+
+    <div class="form-card" id="bus-form" style="display:none">
+      <h3 class="form-title" id="bus-form-title">New Bus</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Bus Name</label>
+          <input type="text" id="bus-name" placeholder="e.g. Bus Alpha" class="styled-input"/>
+        </div>
+        <div class="form-group">
+          <label>Number Plate</label>
+          <input type="text" id="bus-plate" placeholder="e.g. KA-01-AB-1234" class="styled-input"/>
+        </div>
+        <div class="form-group">
+          <label>Capacity</label>
+          <input type="number" id="bus-cap" placeholder="40" class="styled-input"/>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="bus-save-btn">Save</button>
+        <button class="btn btn-ghost"   id="bus-cancel-btn">Cancel</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="data-table" id="bus-table">
+        <thead><tr><th>ID</th><th>Name</th><th>Plate</th><th>Capacity</th><th>Status</th><th>Route</th><th>Actions</th></tr></thead>
+        <tbody id="bus-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── ROUTES TAB ────────────────────────────────────── -->
+  <section class="tab-panel" id="tab-routes">
+    <div class="panel-header">
+      <h2 class="panel-title">Manage Routes</h2>
+      <button class="btn btn-primary" id="btn-add-route">+ Add Route</button>
+    </div>
+
+    <div class="form-card" id="route-form" style="display:none">
+      <h3 class="form-title">New Route</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Route Name</label>
+          <input type="text" id="route-name" placeholder="e.g. Route A – Main Gate Loop" class="styled-input"/>
+        </div>
+        <div class="form-group" style="flex:2">
+          <label>Description</label>
+          <input type="text" id="route-desc" placeholder="Brief description" class="styled-input"/>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="route-save-btn">Save</button>
+        <button class="btn btn-ghost"   id="route-cancel-btn">Cancel</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>ID</th><th>Name</th><th>Description</th><th>Actions</th></tr></thead>
+        <tbody id="route-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── STOPS TAB ─────────────────────────────────────── -->
+  <section class="tab-panel" id="tab-stops">
+    <div class="panel-header">
+      <h2 class="panel-title">Manage Stops</h2>
+      <button class="btn btn-primary" id="btn-add-stop">+ Add Stop</button>
+    </div>
+
+    <div class="form-card" id="stop-form" style="display:none">
+      <h3 class="form-title">New Stop</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Route</label>
+          <select id="stop-route-id" class="styled-select"></select>
+        </div>
+        <div class="form-group">
+          <label>Stop Name</label>
+          <input type="text" id="stop-name" placeholder="e.g. Main Gate" class="styled-input"/>
+        </div>
+        <div class="form-group">
+          <label>Latitude</label>
+          <input type="number" id="stop-lat" step="0.0001" placeholder="12.9716" class="styled-input"/>
+        </div>
+        <div class="form-group">
+          <label>Longitude</label>
+          <input type="number" id="stop-lon" step="0.0001" placeholder="77.5946" class="styled-input"/>
+        </div>
+        <div class="form-group">
+          <label>Order</label>
+          <input type="number" id="stop-order" placeholder="1" class="styled-input"/>
+        </div>
+      </div>
+      <p class="form-hint">💡 Tip: Right-click on Google Maps → "What's here?" to copy coordinates.</p>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="stop-save-btn">Save</button>
+        <button class="btn btn-ghost"   id="stop-cancel-btn">Cancel</button>
+      </div>
+    </div>
+
+    <div class="filter-row">
+      <label>Filter by Route:</label>
+      <select id="stop-filter-route" class="styled-select small">
+        <option value="">All Routes</option>
+      </select>
+    </div>
+
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>ID</th><th>Route</th><th>Stop Name</th><th>Lat</th><th>Lon</th><th>Order</th><th>Actions</th></tr></thead>
+        <tbody id="stop-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── ASSIGN TAB ────────────────────────────────────── -->
+  <section class="tab-panel" id="tab-assign">
+    <div class="panel-header">
+      <h2 class="panel-title">Assign Bus to Route</h2>
+    </div>
+
+    <div class="form-card">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Bus</label>
+          <select id="assign-bus" class="styled-select"></select>
+        </div>
+        <div class="form-group">
+          <label>Route</label>
+          <select id="assign-route" class="styled-select"></select>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="assign-btn">Assign</button>
+      </div>
+      <div class="assign-msg" id="assign-msg"></div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Bus</th><th>Plate</th><th>Status</th><th>Assigned Route</th></tr></thead>
+        <tbody id="assign-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
+
+<script src="/static/js/admin.js"></script>
+</body>
+</html>
