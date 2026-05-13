@@ -52,6 +52,7 @@
       <div class="eta-card" id="eta-card">
         <div class="eta-value" id="eta-value">–</div>
         <div class="eta-unit">minutes away</div>
+        <div class="eta-arrival" id="eta-arrival">Arrival: –</div>
         <div class="eta-stop" id="eta-stop-name"></div>
       </div>
     </div>
@@ -67,6 +68,31 @@
   <!-- Map -->
   <div class="map-wrapper">
     <div id="map"></div>
+    
+    <!-- Navigation Overlay -->
+    <div id="nav-instruction-box" class="nav-instruction-box" style="display:none">
+      <div class="nav-left">
+        <div class="nav-icon" id="nav-icon">↱</div>
+        <div class="nav-details">
+          <div class="nav-text" id="nav-text">Continue on path</div>
+          <div class="nav-subtext" id="nav-next-stop">Heading to next stop...</div>
+        </div>
+      </div>
+      <div class="nav-right">
+        <div class="nav-eta-mins" id="nav-eta-mins">-- min</div>
+        <div class="nav-eta-arrival" id="nav-eta-arrival">--:-- --</div>
+      </div>
+    </div>
+
+    <!-- Compass Rose -->
+    <div class="compass-rose">
+      <div class="compass-n">N</div>
+      <div class="compass-w">W</div>
+      <div class="compass-e">E</div>
+      <div class="compass-s">S</div>
+      <div class="compass-arrow">↑</div>
+    </div>
+
     <div class="map-legend">
       <span class="legend-item"><span class="dot green"></span>Active</span>
       <span class="legend-item"><span class="dot red"></span>Offline</span>

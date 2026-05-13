@@ -51,6 +51,11 @@ socket.on('trip_started', (data) => {
 socket.on('trip_stopped', (data) => {
   addFeedItem(`■ Bus ${getBusName(data.bus_id)} ended trip`, 'warn');
   removeMarker(data.bus_id);
+  if (selectedBus && data.bus_id === selectedBus.id) {
+    if (routeLine) map.removeControl(routeLine);
+    routeLine = null;
+    updateInstruction(null);
+  }
   fetchBuses();
 });
 
@@ -108,6 +113,7 @@ async function selectBus(bus) {
     map.removeControl(routeLine);
     routeLine = null;
   }
+  updateInstruction(null);
 
   if (!bus.route_id) {
     document.getElementById('route-section').style.display = 'none';
@@ -210,7 +216,43 @@ function renderRoadRoute(stops, currentPos = null) {
     createMarker: function() { return null; }
   }).addTo(map);
 
+  routeLine.on('routesfound', function(e) {
+    const routes = e.routes;
+    if (routes && routes.length > 0 && routes[0].instructions.length > 0) {
+      const instr = routes[0].instructions[0];
+      updateInstruction(instr);
+    }
+  });
+
   routeLine.hide();
+}
+
+function updateInstruction(instr) {
+  const box = document.getElementById('nav-instruction-box');
+  const icon = document.getElementById('nav-icon');
+  const text = document.getElementById('nav-text');
+
+  if (!instr && !selectedBus) {
+    box.style.display = 'none';
+    return;
+  }
+
+  box.style.display = 'flex';
+  if (instr) {
+    text.textContent = instr.text || 'Continue on path';
+    
+    // Basic instruction icon mapping
+    const type = instr.type?.toLowerCase() || '';
+    if (type.includes('left')) icon.textContent = '↰';
+    else if (type.includes('right')) icon.textContent = '↱';
+    else if (type.includes('straight')) icon.textContent = '↑';
+    else if (type.includes('destination') || type.includes('waypoint')) icon.textContent = '📍';
+    else if (type.includes('roundabout')) icon.textContent = '🔄';
+    else icon.textContent = '↑';
+  } else {
+    text.textContent = 'Calculating route...';
+    icon.textContent = '🚌';
+  }
 }
 
 // ── Update/create bus marker on map ───────────────────────
@@ -257,20 +299,47 @@ function removeMarker(busId) {
 // ── Update ETA in sidebar and stop list ──────────────────
 function updateSidebarETA(stops) {
   const etaSection = document.getElementById('eta-section');
-  if (!stops || stops.length === 0) { etaSection.style.display = 'none'; return; }
+  if (!stops || stops.length === 0) { 
+    etaSection.style.display = 'none'; 
+    return; 
+  }
 
   etaSection.style.display = 'block';
   const next = stops[0];
-  document.getElementById('eta-value').textContent    = next.eta_minutes ?? '–';
+  const mins = next.eta_minutes ?? '–';
+  const arrivalTime = formatArrivalTime(next.eta_minutes);
+
+  // Update sidebar
+  document.getElementById('eta-value').textContent     = mins;
+  document.getElementById('eta-arrival').textContent   = `Arrival: ${arrivalTime}`;
   document.getElementById('eta-stop-name').textContent = next.name;
+
+  // Update bottom nav bar ETA
+  const navMins = document.getElementById('nav-eta-mins');
+  const navArrival = document.getElementById('nav-eta-arrival');
+  const navStop = document.getElementById('nav-next-stop');
+  
+  if (navMins) navMins.textContent = mins !== '–' ? `${mins} min` : '–';
+  if (navArrival) navArrival.textContent = mins !== '–' ? `Arr: ${arrivalTime}` : '--:--';
+  if (navStop) navStop.textContent = `Heading to: ${next.name}`;
 }
 
 function updateStopETAs(stops) {
   if (!stops) return;
   stops.forEach(s => {
     const el = document.getElementById(`eta-stop-${s.id}`);
-    if (el) el.textContent = s.eta_minutes != null ? `${s.eta_minutes} min` : '–';
+    if (el) {
+      const timeStr = formatArrivalTime(s.eta_minutes);
+      el.textContent = s.eta_minutes != null ? `${s.eta_minutes}m (${timeStr})` : '–';
+    }
   });
+}
+
+function formatArrivalTime(minutes) {
+  if (minutes == null) return '–';
+  const now = new Date();
+  const arrival = new Date(now.getTime() + minutes * 60000);
+  return arrival.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 // ── Feed ───────────────────────────────────────────────────

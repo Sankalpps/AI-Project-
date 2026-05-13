@@ -239,6 +239,12 @@ html, body {
   margin-top: 4px;
   letter-spacing: .5px;
 }
+.eta-arrival {
+  font-size: 13px;
+  color: var(--amber);
+  margin-top: 4px;
+  font-weight: 600;
+}
 .eta-stop {
   font-size: 12px;
   color: var(--text);
@@ -315,6 +321,126 @@ html, body {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+/* ── Navigation Instruction Box ───────────────────────── */
+.nav-instruction-box {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border: 2px solid var(--amber);
+  border-radius: var(--radius);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  z-index: 1000;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+  min-width: 450px;
+  max-width: 90%;
+  animation: slideUp 0.3s ease-out;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.nav-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-icon {
+  font-size: 28px;
+  color: var(--amber);
+  font-weight: bold;
+}
+
+.nav-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.nav-subtext {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  margin-top: 2px;
+}
+
+.nav-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  border-left: 1px solid var(--border);
+  padding-left: 24px;
+}
+
+.nav-eta-mins {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--amber);
+  font-family: var(--mono);
+  line-height: 1;
+}
+
+.nav-eta-arrival {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+/* ── Compass Rose ─────────────────────────────────────── */
+.compass-rose {
+  position: absolute;
+  top: 80px;
+  right: 16px;
+  width: 60px;
+  height: 60px;
+  background: rgba(22, 26, 35, 0.8);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 800;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.compass-rose div {
+  position: absolute;
+}
+
+.compass-n { top: 4px; color: var(--amber); }
+.compass-s { bottom: 4px; }
+.compass-w { left: 4px; }
+.compass-e { right: 4px; }
+.compass-arrow {
+  font-size: 18px;
+  color: var(--amber);
+  transform: translateY(-2px);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translate(-50%, 20px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* Hide default leaflet-routing-machine panel */
+.leaflet-routing-container {
+  display: none !important;
 }
 
 /* ── Custom bus marker ─────────────────────────────────── */
