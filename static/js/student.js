@@ -15,12 +15,13 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 // ── State ──────────────────────────────────────────────────
-let buses       = [];       // [{id, name, number_plate, status, route_id, …}]
-let busMarkers  = {};       // {bus_id: L.Marker}
-let stopMarkers = [];       // L.Marker[]
-let routeLine   = null;     // Routing control object
-let selectedBus = null;
-const feedLimit = 8;
+let buses          = [];       // [{id, name, number_plate, status, route_id, …}]
+let busMarkers     = {};       // {bus_id: L.Marker}
+let stopMarkers    = {};       // {stop_id: L.Marker}
+let routeLine      = null;     // Routing control object (dynamic segment)
+let staticPolyline = null;    // Full static route line
+let selectedBus    = null;
+const feedLimit    = 8;
 
 // ── Socket ─────────────────────────────────────────────────
 const socket = io();
@@ -54,6 +55,8 @@ socket.on('trip_stopped', (data) => {
   if (selectedBus && data.bus_id === selectedBus.id) {
     if (routeLine) map.removeControl(routeLine);
     routeLine = null;
+    if (staticPolyline) staticPolyline.remove();
+    staticPolyline = null;
     updateInstruction(null);
   }
   fetchBuses();
@@ -107,11 +110,15 @@ async function selectBus(bus) {
   });
 
   // Clear old stop markers and routing control
-  stopMarkers.forEach(m => m.remove());
-  stopMarkers = [];
+  Object.values(stopMarkers).forEach(m => m.remove());
+  stopMarkers = {};
   if (routeLine) {
     map.removeControl(routeLine);
     routeLine = null;
+  }
+  if (staticPolyline) {
+    staticPolyline.remove();
+    staticPolyline = null;
   }
   updateInstruction(null);
 
@@ -148,10 +155,16 @@ function renderStopList(stops) {
     const li = document.createElement('li');
     li.className = 'stop-item' + (i === 0 ? ' next' : '');
     li.dataset.stopId = s.id;
+    li.style.cursor = 'pointer';
     li.innerHTML = `
       <span>${s.name}</span>
       <span class="stop-eta" id="eta-stop-${s.id}">–</span>
     `;
+    li.addEventListener('click', () => {
+      map.flyTo([s.latitude, s.longitude], 17);
+      const marker = stopMarkers[s.id];
+      if (marker) marker.openPopup();
+    });
     ol.appendChild(li);
   });
 }
@@ -159,21 +172,37 @@ function renderStopList(stops) {
 // ── Render stop markers on map ─────────────────────────────
 function renderStopMarkers(stops) {
   stops.forEach((s, i) => {
-    const icon = L.divIcon({
-      className: '',
-      html: `<div style="
-        background:${i===0?'var(--amber)':'var(--surface2)'};
-        border:2px solid ${i===0?'#fff':'var(--border)'};
-        width:12px;height:12px;border-radius:50%;
-        box-shadow:0 2px 6px rgba(0,0,0,.4)
-      "></div>`,
-      iconSize: [12, 12],
-      iconAnchor: [6, 6]
-    });
+    const isNext = i === 0;
+    const icon = createStopIcon(isNext);
     const marker = L.marker([s.latitude, s.longitude], { icon })
       .addTo(map)
       .bindPopup(`<b>${s.name}</b><br>Stop #${s.stop_order}`);
-    stopMarkers.push(marker);
+    stopMarkers[s.id] = marker;
+  });
+}
+
+function createStopIcon(isNext, isPassed = false) {
+  let color = 'var(--surface2)';
+  let border = 'var(--border)';
+  if (isNext) {
+    color = 'var(--amber)';
+    border = '#fff';
+  } else if (isPassed) {
+    color = 'rgba(255,255,255,0.1)';
+    border = 'rgba(255,255,255,0.1)';
+  }
+
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      background:${color};
+      border:2px solid ${border};
+      width:12px;height:12px;border-radius:50%;
+      box-shadow:${isNext ? '0 2px 8px var(--amber)' : '0 2px 6px rgba(0,0,0,.4)'};
+      opacity:${isPassed ? 0.5 : 1}
+    "></div>`,
+    iconSize: [12, 12],
+    iconAnchor: [6, 6]
   });
 }
 
@@ -181,50 +210,57 @@ function renderStopMarkers(stops) {
 function renderRoadRoute(stops, currentPos = null) {
   if (!stops || stops.length === 0) return;
 
-  // Build waypoints: Start from current position if available, otherwise from first stop
+  // 1. Manage Static Full Route
+  if (!staticPolyline) {
+    const latlngs = stops.map(s => [s.latitude, s.longitude]);
+    staticPolyline = L.polyline(latlngs, {
+      color: '#f5a623',
+      weight: 6,
+      opacity: 0.3,
+      dashArray: '5, 10'
+    }).addTo(map);
+  }
+
+  // 2. Manage Dynamic Segment
   let waypoints = [];
-  
   if (currentPos) {
     waypoints.push(L.latLng(currentPos.lat, currentPos.lng));
+    waypoints.push(L.latLng(stops[0].latitude, stops[0].longitude));
+  } else {
+    stops.forEach(s => waypoints.push(L.latLng(s.latitude, s.longitude)));
   }
-  
-  stops.forEach(s => {
-    waypoints.push(L.latLng(s.latitude, s.longitude));
-  });
 
-  // If we only have 1 waypoint (no current pos and only 1 stop), we can't route
   if (waypoints.length < 2) return;
 
-  // Remove existing routing control before adding a new one
   if (routeLine) {
-    map.removeControl(routeLine);
+    routeLine.setWaypoints(waypoints);
+  } else {
+    routeLine = L.Routing.control({
+      waypoints: waypoints,
+      router: L.Routing.osrmv1({
+        serviceUrl: 'https://router.project-osrm.org/route/v1'
+      }),
+      routeWhileDragging: false,
+      addWaypoints: false,
+      draggableWaypoints: false,
+      fitSelectedRoutes: false,
+      showAlternatives: false,
+      lineOptions: {
+        styles: [{ color: '#f5a623', opacity: 0.8, weight: 6 }]
+      },
+      createMarker: function() { return null; }
+    }).addTo(map);
+
+    routeLine.on('routesfound', function(e) {
+      const routes = e.routes;
+      if (routes && routes.length > 0 && routes[0].instructions.length > 0) {
+        const instr = routes[0].instructions[0];
+        updateInstruction(instr);
+      }
+    });
+
+    routeLine.hide();
   }
-
-  routeLine = L.Routing.control({
-    waypoints: waypoints,
-    router: L.Routing.osrmv1({
-      serviceUrl: 'https://router.project-osrm.org/route/v1'
-    }),
-    routeWhileDragging: false,
-    addWaypoints: false,
-    draggableWaypoints: false,
-    fitSelectedRoutes: false, // Don't snap zoom on every live update
-    showAlternatives: false,
-    lineOptions: {
-      styles: [{ color: '#f5a623', opacity: 0.8, weight: 6 }]
-    },
-    createMarker: function() { return null; }
-  }).addTo(map);
-
-  routeLine.on('routesfound', function(e) {
-    const routes = e.routes;
-    if (routes && routes.length > 0 && routes[0].instructions.length > 0) {
-      const instr = routes[0].instructions[0];
-      updateInstruction(instr);
-    }
-  });
-
-  routeLine.hide();
 }
 
 function updateInstruction(instr) {
@@ -240,8 +276,6 @@ function updateInstruction(instr) {
   box.style.display = 'flex';
   if (instr) {
     text.textContent = instr.text || 'Continue on path';
-    
-    // Basic instruction icon mapping
     const type = instr.type?.toLowerCase() || '';
     if (type.includes('left')) icon.textContent = '↰';
     else if (type.includes('right')) icon.textContent = '↱';
@@ -283,7 +317,6 @@ function updateBusMarker(data) {
       .bindPopup(`<b>${label}</b><br>Last seen: ${new Date(data.timestamp).toLocaleTimeString()}`);
   }
 
-  // Update popup content
   busMarkers[data.bus_id]
     .getPopup()
     ?.setContent(`<b>${label}</b><br>Last seen: ${new Date(data.timestamp).toLocaleTimeString()}`);
@@ -309,12 +342,10 @@ function updateSidebarETA(stops) {
   const mins = next.eta_minutes ?? '–';
   const arrivalTime = formatArrivalTime(next.eta_minutes);
 
-  // Update sidebar
   document.getElementById('eta-value').textContent     = mins;
   document.getElementById('eta-arrival').textContent   = `Arrival: ${arrivalTime}`;
   document.getElementById('eta-stop-name').textContent = next.name;
 
-  // Update bottom nav bar ETA
   const navMins = document.getElementById('nav-eta-mins');
   const navArrival = document.getElementById('nav-eta-arrival');
   const navStop = document.getElementById('nav-next-stop');
@@ -326,6 +357,26 @@ function updateSidebarETA(stops) {
 
 function updateStopETAs(stops) {
   if (!stops) return;
+
+  document.querySelectorAll('.stop-item').forEach(el => el.classList.remove('next', 'passed'));
+  Object.keys(stopMarkers).forEach(id => {
+    stopMarkers[id].setIcon(createStopIcon(false));
+  });
+
+  const upcomingIds = stops.map(s => s.id);
+  const nextStopId = stops.length > 0 ? stops[0].id : null;
+
+  document.querySelectorAll('.stop-item').forEach(el => {
+    const id = parseInt(el.dataset.stopId);
+    if (id === nextStopId) {
+      el.classList.add('next');
+      if (stopMarkers[id]) stopMarkers[id].setIcon(createStopIcon(true));
+    } else if (!upcomingIds.includes(id)) {
+      el.classList.add('passed');
+      if (stopMarkers[id]) stopMarkers[id].setIcon(createStopIcon(false, true));
+    }
+  });
+
   stops.forEach(s => {
     const el = document.getElementById(`eta-stop-${s.id}`);
     if (el) {
@@ -345,7 +396,6 @@ function formatArrivalTime(minutes) {
 // ── Feed ───────────────────────────────────────────────────
 function addFeedItem(text, type = '') {
   const ul = document.getElementById('feed-list');
-  // Remove placeholder
   ul.querySelectorAll('.muted').forEach(e => e.remove());
 
   const li = document.createElement('li');
@@ -354,7 +404,6 @@ function addFeedItem(text, type = '') {
   li.textContent = `[${now}] ${text}`;
   ul.insertBefore(li, ul.firstChild);
 
-  // Trim
   while (ul.children.length > feedLimit) ul.lastChild.remove();
 }
 
@@ -379,7 +428,6 @@ async function boot() {
 
 boot();
 
-// Auto-refresh bus list every 30s (catches status changes)
 setInterval(fetchBuses, 30_000);
 
 async function fetchLiveBuses() {
@@ -388,7 +436,6 @@ async function fetchLiveBuses() {
     const liveData = await res.json();
     liveData.forEach(data => {
       if (data.latitude && data.longitude) {
-        // Map 'id' from API to 'bus_id' expected by updateBusMarker
         updateBusMarker({
           ...data,
           bus_id: data.id

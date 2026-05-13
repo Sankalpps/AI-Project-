@@ -211,6 +211,17 @@ html, body {
   border-color: var(--amber);
   background: var(--amber);
 }
+.stop-item.passed {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+.stop-item.passed::before {
+  background: var(--surface2);
+  border-color: var(--surface2);
+}
+.stop-item.passed .stop-eta {
+  display: none;
+}
 .stop-item .stop-eta {
   margin-left: auto;
   font-family: var(--mono);

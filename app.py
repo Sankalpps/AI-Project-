@@ -24,6 +24,17 @@ def init_db():
     with get_db() as conn:
         with open('schema.sql', 'r') as f:
             conn.executescript(f.read())
+        
+        # Deduplicate stops (cleanup for previously duplicated sample data)
+        conn.execute("""
+            DELETE FROM stops
+            WHERE id NOT IN (
+                SELECT MIN(id)
+                FROM stops
+                GROUP BY route_id, name, stop_order
+            )
+        """)
+        
         # Migration: Add last_reached_stop_order to trips if it doesn't exist
         try:
             conn.execute('ALTER TABLE trips ADD COLUMN last_reached_stop_order INTEGER DEFAULT 0')
@@ -295,8 +306,9 @@ def handle_location_update(data):
                 # Calculate distance to see if we reached it
                 dist = haversine(lat, lon, s['latitude'], s['longitude'])
                 
-                # If we are within 100m of a stop that is next in sequence, mark it as reached
-                if dist < 0.1 and s['stop_order'] == last_order + 1:
+                # If we are within 150m of a stop that is next in sequence, mark it as reached
+                # Use new_last_order + 1 to allow marking multiple stops in one go if they are very close
+                if dist < 0.15 and s['stop_order'] == new_last_order + 1:
                     new_last_order = s['stop_order']
                 
                 # Only include upcoming stops in the payload

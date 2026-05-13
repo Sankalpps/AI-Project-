@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS stops (
     name        TEXT    NOT NULL,
     latitude    REAL    NOT NULL,
     longitude   REAL    NOT NULL,
-    stop_order  INTEGER DEFAULT 0
+    stop_order  INTEGER DEFAULT 0,
+    UNIQUE(route_id, name, stop_order)
 );
 
 -- ─── Trips (live session per bus) ────────────────────────────
@@ -53,24 +54,24 @@ INSERT OR IGNORE INTO routes (id, name, description) VALUES
 (3, 'Route C – City Express',     'Campus → Railway station (morning & evening)');
 
 -- Stops for Route A  (NIE North Campus internal - Adjusted to user exact coords)
-INSERT OR IGNORE INTO stops (route_id, name, latitude, longitude, stop_order) VALUES
-(1, 'NIE North Main Gate',    12.372115, 76.584975, 1),
-(1, 'Admin Block',           12.372500, 76.585500, 2),
-(1, 'Academic Block 1',      12.373500, 76.586000, 3),
-(1, 'Campus Canteen',        12.373000, 76.587000, 4),
-(1, 'Hostel Block',          12.374500, 76.587500, 5);
+INSERT OR IGNORE INTO stops (id, route_id, name, latitude, longitude, stop_order) VALUES
+(1, 1, 'NIE North Main Gate',    12.372115, 76.584975, 1),
+(2, 1, 'Admin Block',           12.372500, 76.585500, 2),
+(3, 1, 'Academic Block 1',      12.373500, 76.586000, 3),
+(4, 1, 'Campus Canteen',        12.373000, 76.587000, 4),
+(5, 1, 'Hostel Block',          12.374500, 76.587500, 5);
 
 -- Stops for Route B (Hootagalli to Campus)
-INSERT OR IGNORE INTO stops (route_id, name, latitude, longitude, stop_order) VALUES
-(2, 'Hootagalli Circle',     12.3400, 76.5900, 1),
-(2, 'BEML Circle',           12.3415, 76.5850, 2),
-(2, 'NIE North Main Gate',   12.372115, 76.584975, 3);
+INSERT OR IGNORE INTO stops (id, route_id, name, latitude, longitude, stop_order) VALUES
+(6, 2, 'Hootagalli Circle',     12.3400, 76.5900, 1),
+(7, 2, 'BEML Circle',           12.3415, 76.5850, 2),
+(8, 2, 'NIE North Main Gate',   12.372115, 76.584975, 3);
 
 -- Stops for Route C (Railway Station to Campus)
-INSERT OR IGNORE INTO stops (route_id, name, latitude, longitude, stop_order) VALUES
-(3, 'Mysuru Railway Station', 12.3160, 76.6465, 1),
-(3, 'V.V. Puram',            12.3250, 76.6200, 2),
-(3, 'NIE North Main Gate',   12.372115, 76.584975, 3);
+INSERT OR IGNORE INTO stops (id, route_id, name, latitude, longitude, stop_order) VALUES
+(9, 3, 'Mysuru Railway Station', 12.3160, 76.6465, 1),
+(10, 3, 'V.V. Puram',            12.3250, 76.6200, 2),
+(11, 3, 'NIE North Main Gate',   12.372115, 76.584975, 3);
 
 -- Buses
 INSERT OR IGNORE INTO buses (id, name, number_plate, capacity, status, route_id) VALUES
