@@ -40,7 +40,8 @@ CREATE TABLE IF NOT EXISTS trips (
     end_time   TEXT,                  -- NULL while trip is active
     latitude   REAL,                  -- last known position
     longitude  REAL,
-    timestamp  TEXT                   -- time of last GPS ping
+    timestamp  TEXT,                  -- time of last GPS ping
+    last_reached_stop_order INTEGER DEFAULT 0
 );
 
 -- ─── Sample data ─────────────────────────────────────────────

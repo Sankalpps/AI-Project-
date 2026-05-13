@@ -9,6 +9,8 @@ let geoWatchId     = null;
 let pingInterval   = null;
 let lastPosition   = null;
 const PING_MS      = 7000;   // send GPS every 7 seconds
+let isSimulating   = false;
+let simulationInterval = null;
 
 // ── DOM ────────────────────────────────────────────────────
 const busSelect    = document.getElementById('bus-select');
@@ -18,6 +20,7 @@ const infoPlate    = document.getElementById('info-plate');
 const infoCap      = document.getElementById('info-cap');
 const btnStart     = document.getElementById('btn-start');
 const btnStop      = document.getElementById('btn-stop');
+const btnSimulate  = document.getElementById('btn-simulate');
 const tripBadge    = document.getElementById('trip-badge');
 const gpsLat       = document.getElementById('gps-lat');
 const gpsLon       = document.getElementById('gps-lon');
@@ -98,8 +101,10 @@ async function loadBusDetails(id) {
       const routes  = await rRes.json();
       const route   = routes.find(r => r.id === bus.route_id);
       infoRoute.textContent = route ? route.name : '–';
+      btnSimulate.disabled = false;
     } else {
       infoRoute.textContent = 'No route assigned';
+      btnSimulate.disabled = true;
     }
 
     if (bus.status === 'active' && !tripActive) {
@@ -119,6 +124,7 @@ function startTripUI() {
   tripBadge.classList.add('active');
   btnStart.disabled = true;
   btnStop.disabled  = false;
+  btnSimulate.disabled = false;
   busSelect.disabled = true;
 
   gpsMsg.textContent = 'Acquiring GPS…';
@@ -157,6 +163,7 @@ btnStop.addEventListener('click', () => {
 
   socket.emit('stop_trip', { bus_id: selectedBusId });
   tripActive = false;
+  if (isSimulating) stopSimulation();
 
   if (geoWatchId !== null) { navigator.geolocation.clearWatch(geoWatchId); geoWatchId = null; }
   clearInterval(pingInterval);
@@ -166,6 +173,7 @@ btnStop.addEventListener('click', () => {
   btnStart.disabled  = false;
   btnStop.disabled   = true;
   busSelect.disabled = false;
+  btnSimulate.disabled = false;
 
   gpsMsg.textContent = 'GPS inactive';
   gpsBarFill.style.width = '0%';
@@ -223,6 +231,83 @@ function log(msg, type = '') {
 function setConnStatus(connected) {
   document.getElementById('conn-dot').className  = `dot ${connected ? 'connected' : 'disconnected'}`;
   document.getElementById('conn-label').textContent = connected ? 'Connected' : 'Disconnected';
+}
+
+// ── Simulator ──────────────────────────────────────────────
+btnSimulate.addEventListener('click', async () => {
+  if (isSimulating) {
+    stopSimulation();
+    return;
+  }
+  startSimulation();
+});
+
+async function startSimulation() {
+  if (!selectedBusId) return;
+  
+  // 1. Get bus details to find route_id
+  const res = await fetch('/api/buses');
+  const buses = await res.json();
+  const bus = buses.find(b => b.id === selectedBusId);
+  if (!bus || !bus.route_id) return alert('Bus has no route assigned.');
+
+  // 2. Get stops for this route
+  const sRes = await fetch(`/api/stops?route_id=${bus.route_id}`);
+  const stops = await sRes.json();
+  if (stops.length < 2) return alert('Route needs at least 2 stops to simulate.');
+
+  // 3. Fetch the actual road path from OSRM
+  const coords = stops.map(s => `${s.longitude},${s.latitude}`).join(';');
+  const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+  
+  log('Fetching road path...', 'info');
+  const routeRes = await fetch(osrmUrl);
+  const routeData = await routeRes.json();
+  
+  if (!routeData.routes || routeData.routes.length === 0) {
+    return alert('Could not find road path between stops.');
+  }
+
+  const pathPoints = routeData.routes[0].geometry.coordinates; // [[lng, lat], ...]
+
+  isSimulating = true;
+  btnSimulate.innerHTML = '<span class="btn-icon">⏹</span> Stop Simulation';
+  log('Simulation started (Road Following)', 'info');
+  
+  // Ensure trip is started
+  if (!tripActive) {
+    socket.emit('start_trip', { bus_id: selectedBusId });
+    startTripUI();
+  }
+
+  let pointIndex = 0;
+
+  simulationInterval = setInterval(() => {
+    if (pointIndex >= pathPoints.length) {
+      stopSimulation();
+      return;
+    }
+
+    const [lng, lat] = pathPoints[pointIndex];
+
+    onPosition({
+      coords: {
+        latitude: lat,
+        longitude: lng,
+        accuracy: 5
+      }
+    });
+
+    // Move faster: skip some points to maintain speed, or adjust interval
+    pointIndex += 2; 
+  }, 1000); 
+}
+
+function stopSimulation() {
+  isSimulating = false;
+  clearInterval(simulationInterval);
+  btnSimulate.innerHTML = '<span class="btn-icon">🔄</span> Simulate Route';
+  log('Simulation stopped', 'info');
 }
 
 // ── Boot ───────────────────────────────────────────────────

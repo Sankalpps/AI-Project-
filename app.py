@@ -24,6 +24,11 @@ def init_db():
     with get_db() as conn:
         with open('schema.sql', 'r') as f:
             conn.executescript(f.read())
+        # Migration: Add last_reached_stop_order to trips if it doesn't exist
+        try:
+            conn.execute('ALTER TABLE trips ADD COLUMN last_reached_stop_order INTEGER DEFAULT 0')
+        except sqlite3.OperationalError:
+            pass # Already exists
     print("✅ Database initialised.")
 
 # ─────────────────────────────────────────────
@@ -237,7 +242,7 @@ def handle_start_trip(data):
         # Close any existing open trip for this bus
         conn.execute('UPDATE trips SET end_time=? WHERE bus_id=? AND end_time IS NULL',
                      (datetime.utcnow().isoformat(), bus_id))
-        conn.execute('INSERT INTO trips (bus_id, start_time) VALUES (?,?)',
+        conn.execute('INSERT INTO trips (bus_id, start_time, last_reached_stop_order) VALUES (?,?,0)',
                      (bus_id, datetime.utcnow().isoformat()))
         conn.execute('UPDATE buses SET status="active" WHERE id=?', (bus_id,))
     emit('trip_started', {'bus_id': bus_id}, broadcast=True)
@@ -263,11 +268,20 @@ def handle_location_update(data):
     ts     = datetime.utcnow().isoformat()
 
     with get_db() as conn:
+        # Get the current active trip
+        trip = conn.execute('SELECT id, last_reached_stop_order FROM trips WHERE bus_id=? AND end_time IS NULL', (bus_id,)).fetchone()
+        if not trip:
+            return
+
+        last_order = trip['last_reached_stop_order'] or 0
+
+        # Update position
         conn.execute(
-            'UPDATE trips SET latitude=?, longitude=?, timestamp=? WHERE bus_id=? AND end_time IS NULL',
-            (lat, lon, ts, bus_id)
+            'UPDATE trips SET latitude=?, longitude=?, timestamp=? WHERE id=?',
+            (lat, lon, ts, trip['id'])
         )
-        # Fetch route stops so we can compute ETAs
+        
+        # Fetch route stops
         bus = conn.execute('SELECT route_id FROM buses WHERE id=?', (bus_id,)).fetchone()
         stops = []
         if bus and bus['route_id']:
@@ -275,16 +289,29 @@ def handle_location_update(data):
                 'SELECT id, name, latitude, longitude, stop_order FROM stops WHERE route_id=? ORDER BY stop_order',
                 (bus['route_id'],)
             ).fetchall()
+
+            new_last_order = last_order
             for s in raw_stops:
+                # Calculate distance to see if we reached it
                 dist = haversine(lat, lon, s['latitude'], s['longitude'])
-                stops.append({
-                    'id': s['id'],
-                    'name': s['name'],
-                    'latitude': s['latitude'],
-                    'longitude': s['longitude'],
-                    'stop_order': s['stop_order'],
-                    'eta_minutes': eta_minutes(dist)
-                })
+                
+                # If we are within 100m of a stop that is next in sequence, mark it as reached
+                if dist < 0.1 and s['stop_order'] == last_order + 1:
+                    new_last_order = s['stop_order']
+                
+                # Only include upcoming stops in the payload
+                if s['stop_order'] > new_last_order:
+                    stops.append({
+                        'id': s['id'],
+                        'name': s['name'],
+                        'latitude': s['latitude'],
+                        'longitude': s['longitude'],
+                        'stop_order': s['stop_order'],
+                        'eta_minutes': eta_minutes(dist)
+                    })
+            
+            if new_last_order != last_order:
+                conn.execute('UPDATE trips SET last_reached_stop_order=? WHERE id=?', (new_last_order, trip['id']))
 
     payload = {
         'bus_id': bus_id,
@@ -300,6 +327,6 @@ def handle_location_update(data):
 # ─────────────────────────────────────────────
 
 if __name__ == '__main__':
-    if not os.path.exists(DB_PATH):
-        init_db()
+    # Always call init_db to ensure schema is up to date (migrations handled inside)
+    init_db()
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
