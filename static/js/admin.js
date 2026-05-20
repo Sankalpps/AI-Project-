@@ -189,11 +189,83 @@ async function deleteRoute(id) {
   loadRoutes();
 }
 
-// ═══════════════════════════════════════════════════════════
-// STOPS
-// ═══════════════════════════════════════════════════════════
+// ── STOPS ───────────────────────────────────────────────────
 
 let stops = [];
+let adminMap = null;
+let adminMarker = null;
+
+function initStopMap() {
+  if (adminMap) return;
+
+  // Initialize map
+  adminMap = L.map('stop-map').setView([12.372115, 76.584975], 15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(adminMap);
+
+  // Initial marker
+  adminMarker = L.marker([12.372115, 76.584975], { draggable: true }).addTo(adminMap);
+
+  // Click on map to move marker and update inputs
+  adminMap.on('click', (e) => {
+    const { lat, lng } = e.latlng;
+    updateMarkerAndInputs(lat, lng);
+  });
+
+  // Drag marker to update inputs
+  adminMarker.on('dragend', (e) => {
+    const { lat, lng } = e.target.getLatLng();
+    updateMarkerAndInputs(lat, lng);
+  });
+
+  // Sync manual input changes back to map
+  document.getElementById('stop-lat').addEventListener('input', syncInputsToMap);
+  document.getElementById('stop-lon').addEventListener('input', syncInputsToMap);
+}
+
+function updateMarkerAndInputs(lat, lng) {
+  const fixedLat = parseFloat(lat).toFixed(6);
+  const fixedLng = parseFloat(lng).toFixed(6);
+  adminMarker.setLatLng([lat, lng]);
+  document.getElementById('stop-lat').value = fixedLat;
+  document.getElementById('stop-lon').value = fixedLng;
+}
+
+function syncInputsToMap() {
+  const lat = parseFloat(document.getElementById('stop-lat').value);
+  const lng = parseFloat(document.getElementById('stop-lon').value);
+  if (!isNaN(lat) && !isNaN(lng)) {
+    adminMarker.setLatLng([lat, lng]);
+    adminMap.panTo([lat, lng]);
+  }
+}
+
+// Search functionality
+document.getElementById('btn-map-search').addEventListener('click', performSearch);
+document.getElementById('stop-map-search').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') performSearch();
+});
+
+async function performSearch() {
+  const query = document.getElementById('stop-map-search').value.trim();
+  if (!query) return;
+
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+    const results = await res.json();
+    if (results && results.length > 0) {
+      const { lat, lon } = results[0];
+      adminMap.setView([lat, lon], 16);
+      updateMarkerAndInputs(lat, lon);
+    } else {
+      showToast('❌ Location not found');
+    }
+  } catch (err) {
+    console.error('Search error:', err);
+    showToast('❌ Search failed');
+  }
+}
 
 async function loadStops(filterRouteId = '') {
   const url = filterRouteId ? `/api/stops?route_id=${filterRouteId}` : '/api/stops';
@@ -240,7 +312,21 @@ document.getElementById('stop-filter-route').addEventListener('change', (e) => {
 });
 
 document.getElementById('btn-add-stop').addEventListener('click', () => {
+  document.getElementById('stop-name').value = '';
+  document.getElementById('stop-lat').value = '';
+  document.getElementById('stop-lon').value = '';
+  document.getElementById('stop-order').value = '';
+  document.getElementById('stop-map-search').value = '';
+  
   document.getElementById('stop-form').style.display = 'block';
+  initStopMap();
+  
+  // Set default view to campus
+  const campusCoords = [12.372115, 76.584975];
+  adminMap.setView(campusCoords, 15);
+  adminMarker.setLatLng(campusCoords);
+  
+  setTimeout(() => adminMap.invalidateSize(), 100);
 });
 document.getElementById('stop-cancel-btn').addEventListener('click', () => {
   document.getElementById('stop-form').style.display = 'none';
